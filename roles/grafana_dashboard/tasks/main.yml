@@ -1,0 +1,39 @@
+---
+# tasks file for grafana_dashboard
+- name: Copy the public Dashboard on to the server
+  copy:
+    src: node-exporter-linux_rev3.json
+    dest: "/tmp/node-exporter.json"
+
+# - name: Import Grafana dashboard Node Exporter
+#   grafana_dashboard:
+#     grafana_url: http://{{ inventory_hostname }}:3000
+#     grafana_user: "{{ grafana_user }}"
+#     grafana_password: "{{ grafana_password }}"
+#     state: present
+#     overwrite: yes
+#     path: "/tmp/node-exporter.json"
+
+# - name: Print datasource data
+#   debug:
+#     msg: "{{ prom_data.results.0.name }}"
+
+# - name: Print data
+#   debug:
+#     msg: "{{ lookup('file', '{{ role_path }}/files/node-exporter-linux_rev3.json') }}"
+
+- name: Import Grafana Dashboard through API call
+  uri:
+    url: "http://{{ inventory_hostname }}:3000/api/dashboards/db"
+    user: "{{ grafana_user }}"
+    password: "{{ grafana_password }}"
+    force_basic_auth: true
+    method: POST
+    body_format: json
+    body: |
+      {
+        "dashboard": {{ lookup("file", "{{ role_path }}/files/node-exporter-linux_rev3.json") }},
+        "overwrite": true,
+        "message": "Updated by ansible"
+      }
+  

@@ -1,0 +1,28 @@
+global:
+  slack_api_url: "https://hooks.slack.com/services/SlackWebhookAPI"
+
+route:
+  group_by: ['instance', 'severity']
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 3h
+  routes:
+  - match:
+      alertname: InstanceDown
+  receiver: 'alert'
+
+# receivers:
+# - name: 'alert-team'
+#   slack_configs:
+#   - channel: "#webhook-test"
+#     text: "summary: {{ .CommonAnnotations.summary }}\ndescription: {{ .CommonAnnotations.description }}"
+
+receivers:
+- name: "alerta"
+  webhook_configs:
+  - url: 'http://alerta:8080/api/webhooks/prometheus'
+    send_resolved: true
+    http_config:
+      basic_auth: 
+        username: admin@alerta.io
+        password: alerta

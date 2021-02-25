@@ -1,0 +1,6 @@
+---
+# handlers file for alerta_ubuntu
+- name: Reload systemd
+  command: systemctl daemon-reload
+  listen: systemd_reload
+  become: true

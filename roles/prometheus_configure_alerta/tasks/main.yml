@@ -1,0 +1,26 @@
+- name: config file
+  template:
+    src: "{{ role_path }}/templates/prometheus.conf.j2"
+    dest: /etc/prometheus/prometheus.conf
+  become: true
+  notify: event_restart_prometheus
+
+- name: alert config file
+  copy:
+    src: "{{ role_path }}/templates/alertrules.yml.j2"
+    dest: /etc/prometheus/alert.rules.yml
+  become: true
+  notify: event_restart_prometheus
+
+- name: Start prometheus service
+  service:
+    name: prometheus
+    state: started
+    enabled: yes
+  become: true
+
+- name: Check if prometheus is accessible
+  uri:
+    url: http://localhost:9090
+    method: GET
+    status_code: 200

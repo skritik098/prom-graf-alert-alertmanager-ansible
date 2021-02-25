@@ -1,0 +1,4 @@
+---
+# defaults file for grafana_dashboard
+grafana_user: "admin"
+grafana_password: "admin"

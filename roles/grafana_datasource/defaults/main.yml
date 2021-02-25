@@ -1,0 +1,15 @@
+---
+# defaults file for grafana_datasource
+
+grafana_url: "http://{{ groups['grafana'][0] }}:3000"
+grafana_user: "admin"
+grafana_password: "admin"
+org_id: "1"
+
+data_source:
+  - name: Prometheus
+    ds_type: "prometheus"
+    url: "http://{{ groups['prometheus'][0] }}:9090"
+    user: "prom_user"
+    password: "prometheus"
+    is_default: "true"

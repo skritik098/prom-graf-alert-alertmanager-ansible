@@ -1,0 +1,227 @@
+---
+# tasks file for alerta_ubuntu
+
+- name: Update the repo
+  command: "apt-get update"
+  changed_when: false
+  become: true
+
+
+- name: Install Python3 and Other basic packages
+  apt:
+     name:
+         - wget
+         - curl
+         - python3.7
+         - gcc
+     state: present
+  become: true
+
+- name: Add the apt key for mongoDB
+  apt_key:
+     url: https://www.mongodb.org/static/pgp/server-4.2.asc
+     state: present
+  become: true
+
+- name: Adding repo content
+  copy:
+     content: "deb https://repo.mongodb.org/apt/debian buster/mongodb-org/4.2 main"
+     dest: /etc/apt/sources.list.d/mongodb-org-4.2.list
+  become: true
+
+- name: Update the repo
+  command: "apt-get update"
+  changed_when: false
+  become: true
+
+- name: Install required packages for the application
+  apt:
+     name:
+        - gettext-base
+        - libffi-dev
+        - libldap2-dev
+        - libpq-dev
+        - libsasl2-dev
+        - nginx-light
+        - postgresql-client
+        - python3-dev
+        - supervisor
+        - mongodb-org-shell
+        - python-pip
+        - python3-venv
+     install_recommends: false
+     state: present
+  become: true
+
+- name: Install pip latest & venv
+  pip:
+   name: "{{ item }}"
+   executable: pip
+   state: present
+  become: true
+  loop:
+      - pip 
+      - setuptools
+      - virtualenv
+
+- name: Creates a new venv
+  command: "python3 -m venv /venv"
+  changed_when: false
+  become: true
+
+- name: Creating alerta user
+  user:
+   name: "{{userId}}"
+   group: "root"
+   system: yes
+   # shell: "/sbin/nologin"
+   comment: "{{userId}} login User"
+   createhome: "no"
+   state: present
+  become: true
+
+- name: Create a workspace
+  file:
+      dest: "/{{ item }}"
+      state: directory
+      mode: 0757
+      owner: "{{ userId }}"
+      group: "root"
+  become: true
+  loop:
+      - app
+      - web
+
+- name: Copy the files
+  copy:
+      src: "{{ item }}"
+      dest: "/app/"
+      mode: 0755
+      owner: "{{ userId }}"
+      group: "root"
+  become: true
+  loop:
+      - install-plugins.sh
+      - nginx.conf
+      - plugins.txt
+      - requirements.txt
+      - supervisord.conf
+      - uwsgi.ini
+      - wsgi.py
+
+- name: Copy the entrypoint.sh file
+  template:
+      src: "{{ role_path }}/templates/docker-entrypoint.sh.j2"
+      dest: "/app/docker-entrypoint.sh"
+      mode: 0755
+      owner: "{{ userId }}"
+      group: "root"
+  become: true
+
+- name: Install the Setuptools in the virtual env
+  pip:
+     name: "setuptools"
+     state: present
+     virtualenv: "/venv"
+     virtualenv_python: "3.0"
+  become: true
+
+- name: Install python pip packages from requirement.txt
+  pip:
+     requirements: "/app/requirements.txt"
+     virtualenv: "/venv"
+     virtualenv_python: "3.0"
+     state: present
+  become: true
+
+- name: Install the alerta softwares
+  pip:
+     name:
+         - "alerta=={{ CLIENT_VERSION }}"
+         - "alerta-server=={{ SERVER_VERSION }}"
+     state: present
+     virtualenv: "/venv"
+     virtualenv_python: "3.0"
+  become: true
+
+
+# - name: Executing the script to install plugins for alerta files
+#   shell: "/app/install-plugins.sh"
+#   become: true
+#   changed_when: false
+#   async: 200
+#   poll: 50
+
+- name: Downloading the Alerta Web Content
+  unarchive:
+      src: "https://github.com/alerta/alerta-webui/releases/download/v{{ WEBUI_VERSION }}/alerta-webui.tar.gz"
+      dest: /tmp
+      remote_src: yes
+  become: true
+
+- name: Copy the contect into different location
+  shell: "cp -r /tmp/dist/* /web/"
+  become: true
+  changed_when: false
+
+- name: Copy the config file
+  copy:
+      src: "config.json"
+      dest: "/web/config.json"
+      mode: 0755
+      owner: "{{ userId }}"
+      group: "root"
+  become: true
+
+- name: Install MongoDB
+  apt:
+      name: 
+         - mongodb-org
+      state: present
+  become: true
+
+- name: Start and Enable the mongodb service
+  service:
+      name: "mongod"
+      state: started
+      enabled: true
+  become: true
+
+- name: Execute Shell entrypoint
+  shell: "export DATABASE_URL=mongodb://localhost:27017/monitoring AUTH_REQUIRED=true ADMIN_USERS=admin@alerta.io ADMIN_KEY=demo-key DEBUG=1 &&  /app/docker-entrypoint.sh"
+  become: false
+  register: output
+  changed_when: false
+  environment:
+    DATABASE_URL: "mongodb://localhost:27017/monitoring"
+    PATH: /venv/bin:{{ ansible_env.PATH }}
+    AUTH_REQUIRED: "true"
+    ADMIN_USERS: "admin@alerta.io"
+    ADMIN_KEY: "demo-key"
+    DEBUG: "1"
+
+- name: Print the output
+  debug:
+    msg: "{{ output }}"
+# - name: Execute Shell entrypoint
+#   shell: "sudo su -c 'supervisord -c /app/supervisord.conf &' - {{ userId }}"
+#   become: false
+
+- name: Copy the systemd unit file alerta
+  template:
+    src: "{{ role_path }}/templates/init.service.j2"
+    dest: /etc/systemd/system/alerta.service
+  notify: systemd_reload
+  become: true
+ 
+- name: Flush the handlers
+  meta: flush_handlers
+
+- name: Start the service
+  service:
+    name: alerta
+    state: started
+    enabled: yes
+  become: true
+
+

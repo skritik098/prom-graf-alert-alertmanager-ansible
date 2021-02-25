@@ -1,0 +1,17 @@
+---
+# tasks file for grafana_datasource
+
+
+- name: Create Prometheus datasource
+  grafana_datasource:
+    name: "{{ item.name }}"
+    grafana_url: "{{ grafana_url }}"
+    grafana_user: "{{ grafana_user }}"
+    grafana_password: "{{ grafana_password }}"
+    ds_type: "{{ item.ds_type }}"
+    url: "{{ item.url }}"
+    user: "{{ item.user }}"
+    password: "{{ item.password }}"
+    state: present
+  loop: "{{ data_source }}"
+  register: prom_data

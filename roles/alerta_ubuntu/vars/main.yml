@@ -1,0 +1,17 @@
+---
+# vars file for alerta_ubuntu
+CLIENT_VERSION: "7.5.0"
+SERVER_VERSION: "7.5.0"
+WEBUI_VERSION: "7.5.0"
+ALERTA_SVR_CONF_FILE: "/app/alertad.conf"
+ALERTA_CONF_FILE: "/app/alerta.conf"
+HK_EXPIRED_DELETE_HRS: "2"
+HK_INFO_DELETE_HRS: "12"
+HEARTBEAT_SEVERITY: "major"
+DATABASE_URL: "mongodb://localhost:27017/monitoring"
+userId: "alerta"
+groupId: "alerta"
+serviceName: "alerta"
+exec_command: "/usr/bin/supervisord -c /app/supervisord.conf"
+
+
