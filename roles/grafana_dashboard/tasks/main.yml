@@ -2,7 +2,7 @@
 # tasks file for grafana_dashboard
 - name: Copy the public Dashboard on to the server
   copy:
-    src: node-exporter-linux_rev3.json
+    src: node-exporter-linux.json
     dest: "/tmp/node-exporter.json"
 
 # - name: Import Grafana dashboard Node Exporter
