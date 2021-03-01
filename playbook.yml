@@ -1,11 +1,12 @@
 ---
-- hosts: node_exporter
+- hosts: prometheus
   become: yes
   become_method: sudo
   tags:
     - prometheus
   roles:
-    - prometheus_node_exporter
+    - prometheus_install
+    - prometheus_configure
 
 - hosts: consul_agent
   become: yes
